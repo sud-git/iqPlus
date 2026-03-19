@@ -1,8 +1,14 @@
 {
-  "buildCommand": "python manage.py collectstatic --noinput",
-  "outputDirectory": "staticfiles",
-  "env": {
-    "DJANGO_SETTINGS_MODULE": "my_iq_test.settings"
-  },
-  "framework": "django"
+  "builds": [
+    {
+      "src": "my_iq_test/wsgi.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "my_iq_test/wsgi.py"
+    }
+  ]
 }

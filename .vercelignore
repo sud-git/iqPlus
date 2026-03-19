@@ -1,0 +1,15 @@
+.git
+*.pyc
+__pycache__
+.pytest_cache
+.env
+db.sqlite3
+.venv
+venv
+*.egg-info
+dist
+build
+.DS_Store
+.vscode
+.idea
+*.log
