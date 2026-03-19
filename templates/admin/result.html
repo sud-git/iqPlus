@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Student Result</title>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+
+<style>
+body{
+background:#f4f6fa;
+}
+
+table.dataTable tbody tr:hover{
+background:#e8f5e9;
+cursor:pointer;
+}
+</style>
+
+</head>
+
+<body>
+
+<div class="container mt-5">
+
+<h3 class="text-primary mb-4">Class & Subject Wise Result</h3>
+
+
+<div class="row mb-4">
+
+<div class="col-md-4">
+<label>Select Class</label>
+<select id="filterClass" class="form-control">
+<option value="">All Classes</option>
+
+{% for c in classes %}
+<option value="{{ c.id }}">{{ c.name }}</option>
+{% endfor %}
+
+</select>
+</div>
+
+
+<div class="col-md-4">
+<label>Select Subject</label>
+<select id="filterSubject" class="form-control">
+<option value="">All Subjects</option>
+
+{% for sub in subjects %}
+<option value="{{ sub.id }}">{{ sub.name }}</option>
+{% endfor %}
+
+</select>
+</div>
+
+</div>
+
+
+
+<table id="resultTable" class="table table-bordered table-striped">
+
+<thead class="table-dark">
+
+<tr>
+<th>#</th>
+<th>Student Name</th>
+<th>Total Attempt Test</th>
+<th>Total Pending Test</th>
+<th>PDF</th>
+</tr>
+
+</thead>
+
+
+<tbody>
+
+{% for r in results %}
+
+<tr
+data-class="{{ r.student.class_name.id }}"
+data-subject="{{ r.subject.id }}"
+>
+
+<td>{{ forloop.counter }}</td>
+
+<td>{{ r.student.full_name }}</td>
+
+<td>
+<span class="badge bg-success">
+{{ r.total_attempt }}
+</span>
+</td>
+
+<td>
+<span class="badge bg-warning text-dark">
+{{ r.total_pending }}
+</span>
+</td>
+
+<td>
+
+<button class="btn btn-danger btn-sm downloadPDF">
+Download
+</button>
+
+</td>
+
+</tr>
+
+{% endfor %}
+
+</tbody>
+
+</table>
+
+</div>
+
+
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.11.0/html2pdf.bundle.min.js"></script>
+
+
+<script>
+
+$(document).ready(function(){
+
+var table = $('#resultTable').DataTable({
+pageLength:10
+});
+
+
+
+// filter function
+
+function applyFilter(){
+
+var class_id = $('#filterClass').val();
+var subject_id = $('#filterSubject').val();
+
+
+$('#resultTable tbody tr').each(function(){
+
+var rowClass = $(this).data('class');
+var rowSubject = $(this).data('subject');
+
+
+if(
+(class_id=="" || class_id==rowClass) &&
+(subject_id=="" || subject_id==rowSubject)
+)
+{
+$(this).show();
+}
+else
+{
+$(this).hide();
+}
+
+});
+
+}
+
+
+
+$('#filterClass').change(function(){
+applyFilter();
+});
+
+
+$('#filterSubject').change(function(){
+applyFilter();
+});
+
+
+
+// pdf download
+
+$('.downloadPDF').click(function(){
+
+var row = $(this).closest("tr")[0];
+
+html2pdf(row,{
+margin:5,
+filename:'student_result.pdf',
+html2canvas:{scale:2},
+jsPDF:{orientation:'landscape'}
+});
+
+});
+
+});
+
+</script>
+
+</body>
+</html>

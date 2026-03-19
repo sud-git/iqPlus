@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Attempted Tests</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<style>
+body{
+    background:#f4f6f9;
+    padding:40px;
+}
+
+.card-box{
+    background:#fff;
+    border-radius:15px;
+    padding:20px;
+    box-shadow:0 5px 15px rgba(0,0,0,.1);
+    transition:.3s;
+}
+
+.card-box:hover{
+    transform:translateY(-5px);
+}
+
+.progress{
+    height:18px;
+    border-radius:10px;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+<h3 class="mb-4">My Attempted Tests</h3>
+
+<div class="row g-4">
+
+{% for result in attempted_tests %}
+<div class="col-md-6">
+
+    <div class="card-box">
+
+        <h5>{{ result.test.test_name }}</h5>
+        <p class="text-muted">Date: {{ result.created_at|date:"d M Y" }}</p>
+
+        <hr>
+
+        <p><strong>Total Questions:</strong> {{ result.test.total_questions }}</p>
+        <p><strong>Attempted Questions:</strong> {{ result.attempted_questions }}</p>
+        <p><strong>Marks:</strong> {{ result.marks }} / {{ result.test.total_marks }}</p>
+
+        <!-- Attempted Question Progress -->
+        {% widthratio result.attempted_questions result.test.total_questions 100 as attempt_percent %}
+
+        <label>Attempt Progress</label>
+        <div class="progress mb-2">
+            <div class="progress-bar bg-info"
+                 style="width: {{ attempt_percent }}%;">
+                 {{ attempt_percent }}%
+            </div>
+        </div>
+
+        <!-- Marks Progress -->
+        {% widthratio result.marks result.test.total_marks 100 as marks_percent %}
+
+        <label>Score</label>
+        <div class="progress">
+            <div class="progress-bar bg-success"
+                 style="width: {{ marks_percent }}%;">
+                 {{ marks_percent }}%
+            </div>
+        </div>
+
+    </div>
+
+</div>
+{% empty %}
+<div class="col-12">
+    <div class="alert alert-warning">
+        You have not attempted any test yet.
+    </div>
+</div>
+{% endfor %}
+
+</div>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Student Test</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<style>
+body{
+    background:#0f172a;
+    color:#fff;
+}
+.question-box{
+    background:#020617;
+    border-radius:15px;
+    padding:20px;
+    margin-bottom:20px;
+}
+.option{
+    display:block;
+    padding:10px;
+    border:1px solid #334155;
+    border-radius:10px;
+    margin-bottom:10px;
+    cursor:pointer;
+}
+.option:hover{
+    background:#2563eb;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container py-4">
+
+<h3 class="mb-3">📝 Test : {{ test_name }}</h3>
+
+<form method="POST" action="/submit_test_code/">
+{% csrf_token %}
+
+<!-- IMPORTANT: test_name backend ko bhejne ke liye -->
+<input type="hidden" name="test_name" value="{{ test_name }}">
+
+{% for q in questions %}
+<div class="question-box">
+    <h6>Q{{ forloop.counter }}. {{ q.question }}</h6>
+
+    <label class="option">
+        <input type="radio" name="answer_{{ q.id }}" value="A" required>
+        {{ q.option_a }}
+    </label>
+
+    <label class="option">
+        <input type="radio" name="answer_{{ q.id }}" value="B">
+        {{ q.option_b }}
+    </label>
+
+    <label class="option">
+        <input type="radio" name="answer_{{ q.id }}" value="C">
+        {{ q.option_c }}
+    </label>
+
+    <label class="option">
+        <input type="radio" name="answer_{{ q.id }}" value="D">
+        {{ q.option_d }}
+    </label>
+</div>
+{% empty %}
+<p class="text-warning">No questions found</p>
+{% endfor %}
+
+<button type="submit" class="btn btn-success w-100">
+    Submit Test
+</button>
+
+</form>
+
+</div>
+</body>
+</html>

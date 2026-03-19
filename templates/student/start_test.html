@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>{{ test.test_name }}</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<style>
+body{
+    background:#f4f6f9;
+}
+
+.exam-container{
+    display:flex;
+    gap:20px;
+}
+
+.question-panel{
+    flex:3;
+    background:#fff;
+    padding:20px;
+    border-radius:10px;
+    box-shadow:0 5px 15px rgba(0,0,0,.1);
+}
+
+.palette-panel{
+    flex:1;
+    background:#fff;
+    padding:20px;
+    border-radius:10px;
+    box-shadow:0 5px 15px rgba(0,0,0,.1);
+}
+
+.question-number{
+    width:40px;
+    height:40px;
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    margin:5px;
+    cursor:pointer;
+    background:#dee2e6;
+}
+
+.question-number.answered{
+    background:#28a745;
+    color:#fff;
+}
+
+.timer-box{
+    font-weight:bold;
+    font-size:18px;
+}
+</style>
+</head>
+<body>
+
+<div class="container-fluid mt-4">
+
+<div class="d-flex justify-content-between mb-3">
+    <h4>{{ test.test_name }}</h4>
+    <div class="timer-box text-danger">
+        Time Left: <span id="timer"></span>
+    </div>
+</div>
+
+<form method="POST" id="testForm">
+{% csrf_token %}
+
+<div class="exam-container">
+
+<!-- Question Panel -->
+<div class="question-panel">
+
+    {% for question in questions %}
+    <div class="question-block" id="question{{ forloop.counter }}" style="{% if not forloop.first %}display:none{% endif %}">
+
+        <h5>Question {{ forloop.counter }}</h5>
+        <p>{{ question.question }}</p>
+
+        <div class="form-check">
+            <input class="form-check-input option-input" type="radio"
+                   name="{{ question.id }}" value="A">
+            <label class="form-check-label">{{ question.option_a }}</label>
+        </div>
+
+        <div class="form-check">
+            <input class="form-check-input option-input" type="radio"
+                   name="{{ question.id }}" value="B">
+            <label class="form-check-label">{{ question.option_b }}</label>
+        </div>
+
+        <div class="form-check">
+            <input class="form-check-input option-input" type="radio"
+                   name="{{ question.id }}" value="C">
+            <label class="form-check-label">{{ question.option_c }}</label>
+        </div>
+
+        <div class="form-check">
+            <input class="form-check-input option-input" type="radio"
+                   name="{{ question.id }}" value="D">
+            <label class="form-check-label">{{ question.option_d }}</label>
+        </div>
+
+    </div>
+    {% endfor %}
+
+    <div class="mt-4 d-flex justify-content-between">
+        <button type="button" class="btn btn-secondary" onclick="prevQuestion()">Previous</button>
+        <button type="button" class="btn btn-primary" onclick="nextQuestion()">Next</button>
+        <button type="submit" class="btn btn-success">Submit Test</button>
+    </div>
+
+</div>
+
+<!-- Question Palette -->
+<div class="palette-panel">
+    <h6>Question Palette</h6>
+    <div class="d-flex flex-wrap">
+        {% for question in questions %}
+        <div class="question-number" onclick="goToQuestion({{ forloop.counter }})" id="nav{{ forloop.counter }}">
+            {{ forloop.counter }}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+</div>
+</form>
+</div>
+
+<script>
+let currentQuestion = 1;
+let totalQuestions = {{ questions|length }};
+let duration = {{ test.duration }} * 60;
+
+function showQuestion(num){
+    document.querySelectorAll(".question-block").forEach(q => q.style.display = "none");
+    document.getElementById("question"+num).style.display = "block";
+}
+
+function nextQuestion(){
+    if(currentQuestion < totalQuestions){
+        currentQuestion++;
+        showQuestion(currentQuestion);
+    }
+}
+
+function prevQuestion(){
+    if(currentQuestion > 1){
+        currentQuestion--;
+        showQuestion(currentQuestion);
+    }
+}
+
+function goToQuestion(num){
+    currentQuestion = num;
+    showQuestion(num);
+}
+
+document.querySelectorAll(".option-input").forEach(input=>{
+    input.addEventListener("change", function(){
+        let qName = this.name;
+        let blocks = document.querySelectorAll(".question-block");
+        blocks.forEach((block,index)=>{
+            let radios = block.querySelectorAll("input[name='"+qName+"']");
+            if(radios.length){
+                document.getElementById("nav"+(index+1)).classList.add("answered");
+            }
+        });
+    });
+});
+
+function startTimer(){
+    let timerDisplay = document.getElementById("timer");
+    let interval = setInterval(()=>{
+        let minutes = Math.floor(duration / 60);
+        let seconds = duration % 60;
+
+        timerDisplay.textContent =
+            (minutes < 10 ? "0"+minutes : minutes) + ":" +
+            (seconds < 10 ? "0"+seconds : seconds);
+
+        if(duration <= 0){
+            clearInterval(interval);
+            alert("Time Over! Test Submitted.");
+            document.getElementById("testForm").submit();
+        }
+
+        duration--;
+    },1000);
+}
+
+startTimer();
+</script>
+
+</body>
+</html>
