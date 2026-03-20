@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: iqplus
+    runtime: python
+    pythonVersion: 3.13
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn my_iq_test.wsgi:application
+    envVars:
+      - key: DEBUG
+        value: "False"
+      - key: DJANGO_SETTINGS_MODULE
+        value: my_iq_test.settings
