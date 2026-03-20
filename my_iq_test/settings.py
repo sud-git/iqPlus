@@ -24,9 +24,9 @@ import os
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-uu-0oj_=ipc$1gs*lygz6!+%^-5j#7o#m)g(zbyp+w!c08-vl0')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DEBUG', 'False') == 'True'
+DEBUG = False
 
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+ALLOWED_HOSTS = ['iqplus-3.onrender.com', 'localhost', '127.0.0.1', 'www.iqplus-3.onrender.com']
 
 
 # Application definition
@@ -126,15 +126,15 @@ STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')] if os.path.exists(os.path.
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Session configuration for security
-SESSION_COOKIE_SECURE = not DEBUG
+SESSION_COOKIE_SECURE = True
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = 'Lax'
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 
 # CSRF configuration
-CSRF_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = True
 CSRF_COOKIE_HTTPONLY = True
-CSRF_TRUSTED_ORIGINS = os.environ.get('CSRF_TRUSTED_ORIGINS', '').split(',') if os.environ.get('CSRF_TRUSTED_ORIGINS') else []
+CSRF_TRUSTED_ORIGINS = ['https://iqplus-3.onrender.com', 'https://www.iqplus-3.onrender.com']
 
 # Security headers
 SECURE_BROWSER_XSS_FILTER = True
