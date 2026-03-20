@@ -546,8 +546,14 @@ def result(request):
         ).count()
 
         subject = None
-        if StudentTest.objects.filter(student=student).exists():
-            subject = StudentTest.objects.filter(student=student).first().test.questions.first().chapter.subject
+        try:
+            student_test = StudentTest.objects.filter(student=student).first()
+            if student_test and student_test.test:
+                first_question = student_test.test.questions.first()
+                if first_question and first_question.chapter:
+                    subject = first_question.chapter.subject
+        except:
+            subject = None
 
         results.append({
             "student": student,
@@ -646,7 +652,12 @@ def student_dashboard(request):
     if not student_id:
         return redirect('student_login')
 
-    student = Student.objects.get(id=student_id)
+    try:
+        student = Student.objects.get(id=student_id)
+    except Student.DoesNotExist:
+        request.session.flush()
+        return redirect('student_login')
+
     student_tests = StudentTest.objects.filter(student=student)
 
     total_tests = student_tests.count()
@@ -665,7 +676,11 @@ def student_dashboard(request):
 @student_login_required
 def total_test(request):
     student_id = request.session.get('student_id')
-    student = get_object_or_404(Student, id=student_id)
+    try:
+        student = get_object_or_404(Student, id=student_id)
+    except:
+        request.session.flush()
+        return redirect('student_login')
 
     # All tests assigned to this student via StudentTest
     student_tests = StudentTest.objects.filter(student=student).select_related('test')
@@ -701,6 +716,11 @@ def start_test(request, test_id):
         student_test.end_time = None
         student_test.score = 0
         student_test.save()
+        # Clear previous answers
+        StudentAnswer.objects.filter(
+            student=student,
+            test=test
+        ).delete()
 
     # ⏳ Start timer if first time
     if not student_test.start_time:
@@ -715,12 +735,29 @@ def start_test(request, test_id):
 
     if request.method == "POST":
         score = 0
-
-        for question in questions:
-            selected = request.POST.get(str(question.id))
-
-            if selected and selected.strip().upper() == question.correct_answer.strip().upper():
-                score += int(question.marks)
+        with transaction.atomic():
+            # Clear previous answers first
+            StudentAnswer.objects.filter(
+                student=student,
+                test=test
+            ).delete()
+            
+            for question in questions:
+                selected = request.POST.get(str(question.id))
+                is_correct = False
+                
+                if selected and selected.strip().upper() == question.correct_answer.strip().upper():
+                    score += int(question.marks)
+                    is_correct = True
+                
+                # Store the answer
+                StudentAnswer.objects.create(
+                    student=student,
+                    question=question,
+                    test=test,
+                    selected_option=selected if selected else '',
+                    is_correct=is_correct
+                )
 
         student_test.score = score
         student_test.completed = True
@@ -745,7 +782,11 @@ def attempted(request):
     if not student_id:
         return redirect('student_login')
 
-    student = get_object_or_404(Student, id=student_id)
+    try:
+        student = get_object_or_404(Student, id=student_id)
+    except:
+        request.session.flush()
+        return redirect('student_login')
 
     attempted_tests = StudentTest.objects.filter(
         student=student,
@@ -762,7 +803,11 @@ def pending(request):
     if not student_id:
         return redirect('student_login')
 
-    student = get_object_or_404(Student, id=student_id)
+    try:
+        student = get_object_or_404(Student, id=student_id)
+    except:
+        request.session.flush()
+        return redirect('student_login')
 
     pending_tests = StudentTest.objects.filter(
         student=student,
@@ -784,6 +829,7 @@ def results(request):
     try:
         student = Student.objects.get(id=student_id)
     except Student.DoesNotExist:
+        request.session.flush()
         return redirect('student_login')
 
     results = StudentTest.objects.filter(
@@ -800,13 +846,20 @@ def results(request):
 def result_detail(request, student_test_id):
 
     student_id = request.session.get('student_id')
-    student = get_object_or_404(Student, id=student_id)
+    try:
+        student = get_object_or_404(Student, id=student_id)
+    except:
+        request.session.flush()
+        return redirect('student_login')
 
-    student_test = get_object_or_404(
-        StudentTest,
-        id=student_test_id,
-        student=student
-    )
+    try:
+        student_test = get_object_or_404(
+            StudentTest,
+            id=student_test_id,
+            student=student
+        )
+    except:
+        return redirect('student_dashboard')
 
     test = student_test.test
     questions = test.questions.all()
@@ -819,9 +872,18 @@ def result_detail(request, student_test_id):
 
     score = student_test.score
 
-    # simple calculation
-    correct = int(score / questions.first().marks) if questions.exists() else 0
-    wrong = total_questions - correct
+    # Calculate correct answers by retrieving actual answers from StudentAnswer
+    correct = 0
+    wrong = 0
+    
+    if total_questions > 0:
+        student_answers = StudentAnswer.objects.filter(
+            student=student,
+            test=test
+        )
+        correct = student_answers.filter(is_correct=True).count()
+        wrong = student_answers.filter(is_correct=False).count()
+    
     attempted = correct + wrong
 
     context = {
