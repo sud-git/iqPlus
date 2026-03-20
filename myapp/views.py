@@ -1,4 +1,5 @@
 import csv
+import logging
 from datetime import timedelta
 from functools import wraps
 from django.utils import timezone
@@ -10,6 +11,8 @@ from django.contrib import messages
 from django.http import JsonResponse
 from django.views.decorators.cache import never_cache
 from django.db import transaction
+
+logger = logging.getLogger(__name__)
 
 from myapp.models import (
     Admin, ClassModel, Subject, Chapter, Question,
@@ -260,14 +263,6 @@ def question_bank(request):
                     class_name=class_obj
                 )
                 
-                print(f"[QUESTION_BANK] Test created: {test.test_name}")
-                print(f"[QUESTION_BANK] School: {school.name} (ID: {school.id})")
-                print(f"[QUESTION_BANK] Class: {class_obj.name} (ID: {class_obj.id})")
-                print(f"[QUESTION_BANK] Students found: {students.count()}")
-                
-                if students.count() == 0:
-                    print("⚠️  [QUESTION_BANK] WARNING: No students found!")
-                
                 # Use get_or_create to prevent duplicates
                 assigned_count = 0
                 for student in students:
@@ -277,9 +272,6 @@ def question_bank(request):
                     )
                     if created:
                         assigned_count += 1
-                        print(f"  ✓ Assigned: {student.full_name}")
-                
-                print(f"[QUESTION_BANK] Total assigned: {assigned_count}")
 
             messages.success(request, f"Test Created & Assigned to {assigned_count} students!")
 
@@ -409,28 +401,16 @@ def forward_questions(request):
 
     if request.method == "POST":
         
-        print("=" * 50)
-        print("FORWARD QUESTIONS - POST REQUEST")
-        print("=" * 50)
-
         class_id = request.POST.get('class_name')
         test_name = request.POST.get('test_name')
         duration = request.POST.get('duration')
         question_ids = request.POST.getlist('question_ids')
-        
-        print(f"Class ID: {class_id}")
-        print(f"Test Name: {test_name}")
-        print(f"Duration: {duration}")
-        print(f"Question IDs: {question_ids}")
-        print(f"Total Questions Selected: {len(question_ids)}")
 
         if not class_id or not test_name or not duration:
-            print("ERROR: Missing required fields")
             messages.error(request, "All fields are required.")
             return redirect('forward_questions')
 
         if not question_ids:
-            print("ERROR: No questions selected")
             messages.error(request, "Select at least one question.")
             return redirect('forward_questions')
 
@@ -452,36 +432,21 @@ def forward_questions(request):
 
             with transaction.atomic():
 
-                # ✅ Correct Test Create
+                # Create Test
                 test = Test.objects.create(
                     class_name=class_obj,
                     test_name=test_name,
                     duration=duration
                 )
-                print(f"✅ Test Created: {test.id} - {test.test_name}")
 
-                # ✅ Attach Questions
+                # Attach Questions
                 test.questions.set([int(q) for q in question_ids])
-                print(f"✅ Questions Attached: {test.questions.count()}")
 
-                # ✅ Assign To Students
+                # Assign To Students
                 students = Student.objects.filter(
                     school=school,
                     class_name=class_obj
                 )
-                print(f"✅ School ID for filtering: {school.id}")
-                print(f"✅ School Name: {school.name}")
-                print(f"✅ Class ID: {class_obj.id}")
-                print(f"✅ Class Name: {class_obj.name}")
-                print(f"✅ Found {students.count()} students in {class_obj.name}")
-                
-                if students.count() == 0:
-                    print("⚠️  WARNING: No students found in this class!")
-                    print(f"   Checking all students in school {school.name}:")
-                    all_students = Student.objects.filter(school=school)
-                    print(f"   Total students in school: {all_students.count()}")
-                    for s in all_students:
-                        print(f"     - {s.full_name}: Class={s.class_name.name} (ID:{s.class_name.id})")
 
                 # Use get_or_create to prevent duplicates
                 assigned_count = 0
@@ -492,20 +457,12 @@ def forward_questions(request):
                     )
                     if created:
                         assigned_count += 1
-                        print(f"  ✓ NEW: Assigned to {student.full_name}")
-                    else:
-                        print(f"  - EXISTS: {student.full_name} already had this test")
-                
-                print(f"✅ Total Assigned: {assigned_count} students")
 
             messages.success(request, f"Test Created & Forwarded to {assigned_count} students!")
-            print("=" * 50)
             return redirect('forward_questions')
 
         except Exception as e:
-            import traceback
-            print(traceback.format_exc())
-            messages.error(request, f"Error: {str(e)}")
+            messages.error(request, "Error creating test. Please try again.")
             return redirect('forward_questions')
 
     classes = ClassModel.objects.filter(school=school)
